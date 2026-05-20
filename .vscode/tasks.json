@@ -1,0 +1,90 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Flutter: Run Web",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["run", "-d", "chrome", "-v"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Flutter: Run Mobile (Android)",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["run", "-d", "android", "-v"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Flutter: Run All Devices",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["run", "-d", "all", "-v"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Flutter: Clean & Rebuild",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["clean"],
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      "label": "Flutter: Check Devices",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["devices"],
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "Flutter: Analyze Code",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "presentation": {
+        "reveal": "always"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    }
+  ]
+}

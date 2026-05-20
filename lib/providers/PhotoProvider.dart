@@ -1,0 +1,143 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+import '../models/PhotoModel.dart';
+
+class PhotoProvider extends ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  List<PhotoModel> _photos = [];
+  List<PhotoModel> _allPhotos = [];
+  bool _isLoading = false;
+
+  List<PhotoModel> get photos => _photos;
+  List<PhotoModel> get allPhotos => _allPhotos;
+  bool get isLoading => _isLoading;
+
+  Future<void> fetchPhotosBySite(String siteId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final snapshot = await _firestore
+          .collection('photos')
+          .where('siteId', isEqualTo: siteId)
+          .orderBy('uploadedAt', descending: true)
+          .get();
+
+      _photos = snapshot.docs
+          .map((doc) => PhotoModel.fromMap(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching photos: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> fetchAllPhotos() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final snapshot = await _firestore
+          .collection('photos')
+          .orderBy('uploadedAt', descending: true)
+          .get();
+
+      _photos = snapshot.docs
+          .map((doc) => PhotoModel.fromMap(doc.data(), doc.id))
+          .toList();
+      _allPhotos = List.from(_photos);
+    } catch (e) {
+      debugPrint('Error fetching photos: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<String> uploadPhoto(
+    String siteId,
+    String filePath,
+    String caption, {
+    String? description,
+  }) async {
+    try {
+      final fileName =
+          'photos/$siteId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = _storage.ref().child(fileName);
+
+      await storageRef.putFile(
+        File(filePath),
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      final photoDoc = PhotoModel(
+        id: '',
+        siteId: siteId,
+        url: downloadUrl,
+        caption: caption,
+        uploadedAt: DateTime.now(),
+        uploadedBy: 'Current User',
+        description: description,
+      );
+
+      final docRef = await _firestore
+          .collection('photos')
+          .add(photoDoc.toMap());
+
+      _allPhotos.add(photoDoc.copyWith(id: docRef.id));
+
+      await fetchPhotosBySite(siteId);
+      return docRef.id;
+    } catch (e) {
+      debugPrint('Error uploading photo: $e');
+      throw Exception('Failed to upload photo: $e');
+    }
+  }
+
+  Future<void> deletePhoto(String photoId, String photoUrl) async {
+    try {
+      // Delete from Firestore
+      await _firestore.collection('photos').doc(photoId).delete();
+
+      // Delete from Storage
+      try {
+        final storageRef = FirebaseStorage.instance.refFromURL(photoUrl);
+        await storageRef.delete();
+      } catch (e) {
+        debugPrint('Error deleting photo from storage: $e');
+      }
+
+      _photos.removeWhere((photo) => photo.id == photoId);
+      _allPhotos.removeWhere((photo) => photo.id == photoId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error deleting photo: $e');
+      throw Exception('Failed to delete photo: $e');
+    }
+  }
+
+  Future<void> updatePhotoCaption(String photoId, String newCaption) async {
+    try {
+      await _firestore.collection('photos').doc(photoId).update({
+        'caption': newCaption,
+      });
+
+      final index = _photos.indexWhere((photo) => photo.id == photoId);
+      if (index != -1) {
+        _photos[index] = _photos[index].copyWith(caption: newCaption);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error updating photo caption: $e');
+      throw Exception('Failed to update photo: $e');
+    }
+  }
+}

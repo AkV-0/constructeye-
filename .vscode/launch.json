@@ -1,0 +1,48 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter: Web (Chrome)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "args": ["--web-port=8080"],
+      "console": "integrated"
+    },
+    {
+      "name": "Flutter: Mobile (Android)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "deviceId": "android",
+      "console": "integrated"
+    },
+    {
+      "name": "Flutter: Mobile (iOS)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "deviceId": "ios",
+      "console": "integrated"
+    },
+    {
+      "name": "Flutter: Windows Desktop",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "deviceId": "windows",
+      "console": "integrated"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Flutter: Web + Mobile",
+      "configurations": ["Flutter: Web (Chrome)", "Flutter: Mobile (Android)"]
+    },
+    {
+      "name": "Flutter: All Devices",
+      "configurations": ["Flutter: Web (Chrome)", "Flutter: Mobile (Android)", "Flutter: Windows Desktop"]
+    }
+  ]
+}
