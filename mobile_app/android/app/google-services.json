@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "639558965546",
+    "project_id": "constructionmanagementsy-f19c4",
+    "storage_bucket": "constructionmanagementsy-f19c4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:639558965546:android:4fd67da9f80536d8e42653",
+        "android_client_info": {
+          "package_name": "com.example.mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBS9d61J50bqcukZVcj-qkXsG-3M0aP5BU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
