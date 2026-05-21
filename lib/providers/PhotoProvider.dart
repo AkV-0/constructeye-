@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import '../models/PhotoModel.dart';
 
@@ -66,9 +67,14 @@ class PhotoProvider extends ChangeNotifier {
     String caption, {
     String? description,
   }) async {
+    _isLoading = true;
+    notifyListeners();
+
     try {
-      final fileName =
-          'photos/$siteId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final fileName = 'photos/$siteId/${DateTime.now().millisecondsSinceEpoch}.jpg';
       final storageRef = _storage.ref().child(fileName);
 
       await storageRef.putFile(
@@ -84,7 +90,7 @@ class PhotoProvider extends ChangeNotifier {
         url: downloadUrl,
         caption: caption,
         uploadedAt: DateTime.now(),
-        uploadedBy: 'Current User',
+        uploadedBy: user.email ?? user.uid,
         description: description,
       );
 
@@ -92,11 +98,16 @@ class PhotoProvider extends ChangeNotifier {
           .collection('photos')
           .add(photoDoc.toMap());
 
-      _allPhotos.add(photoDoc.copyWith(id: docRef.id));
+      final newPhoto = photoDoc.copyWith(id: docRef.id);
+      _photos.insert(0, newPhoto);
+      _allPhotos.insert(0, newPhoto);
 
-      await fetchPhotosBySite(siteId);
+      _isLoading = false;
+      notifyListeners();
       return docRef.id;
     } catch (e) {
+      _isLoading = false;
+      notifyListeners();
       debugPrint('Error uploading photo: $e');
       throw Exception('Failed to upload photo: $e');
     }

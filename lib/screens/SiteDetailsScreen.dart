@@ -90,6 +90,15 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // Logic to quickly upload a photo for this specific site
+          _showQuickUploadOptions(context);
+        },
+        backgroundColor: kAccent,
+        icon: const Icon(Icons.add_a_photo, color: Colors.white),
+        label: const Text("Upload Photo", style: TextStyle(color: Colors.white)),
+      ),
       body: FutureBuilder<SiteMetrics>(
         future: _metricsFuture,
         builder: (context, snapshot) {
@@ -296,6 +305,139 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
     final parsed = double.tryParse(cleaned);
     if (parsed == null) return 0.0;
     return parsed.clamp(0.0, 100.0) / 100.0;
+  }
+
+  void _showQuickUploadOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                "Upload Photo",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text("Take Photo"),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUpload(context, 'camera');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.image),
+              title: const Text("From Gallery"),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUpload(context, 'gallery');
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUpload(BuildContext context, String source) async {
+    final picker = ImagePicker();
+    try {
+      final XFile? file = source == 'camera'
+          ? await picker.pickImage(source: ImageSource.camera, imageQuality: 70)
+          : await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
+      if (file != null) {
+        if (!mounted) return;
+        _showUploadDialog(context, file);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error picking image: $e")),
+      );
+    }
+  }
+
+  void _showUploadDialog(BuildContext context, XFile file) {
+    final captionController = TextEditingController();
+    bool isUploading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Upload Photo"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(File(file.path), height: 120, fit: BoxFit.cover),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: captionController,
+                enabled: !isUploading,
+                decoration: const InputDecoration(
+                  labelText: "Caption",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (isUploading) ...[
+                const SizedBox(height: 16),
+                const CircularProgressIndicator(),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isUploading ? null : () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: isUploading
+                  ? null
+                  : () async {
+                      if (captionController.text.isEmpty) return;
+                      setDialogState(() => isUploading = true);
+                      try {
+                        await Provider.of<PhotoProvider>(context, listen: false)
+                            .uploadPhoto(
+                          _site.id,
+                          file.path,
+                          captionController.text,
+                        );
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                        setState(() {
+                          _metricsFuture = _fetchSiteMetrics();
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Photo uploaded!")),
+                        );
+                      } catch (e) {
+                        setDialogState(() => isUploading = false);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Upload failed: $e")),
+                        );
+                      }
+                    },
+              child: const Text("Upload"),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _infoCard(
