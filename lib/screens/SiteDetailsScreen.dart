@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../models/SiteModel.dart';
+import '../providers/PhotoProvider.dart';
 import 'AddSiteScreen.dart';
 
 class SiteDetailsScreen extends StatefulWidget {
