@@ -5,8 +5,11 @@ import '../providers/RoleProvider.dart';
 import '../providers/ThemeProvider.dart';
 import '../services/AuthService.dart';
 import 'LoginScreen.dart';
+import 'availability_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -61,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: const Color.fromRGBO(0, 0, 0, 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -113,7 +116,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ).role.toUpperCase(),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: isDark ? Colors.grey[400] : Colors.blueGrey.shade700,
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.blueGrey.shade700,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -144,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: const Color.fromRGBO(0, 0, 0, 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -196,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: const Color.fromRGBO(0, 0, 0, 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -240,7 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: const Color.fromRGBO(0, 0, 0, 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -258,6 +263,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    _buildActionTile(
+                      icon: Icons.local_shipping,
+                      title: "Check Availability",
+                      subtitle: "Verify service availability by pincode",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AvailabilityScreen(),
+                        ),
+                      ),
+                      textColor: kText,
+                    ),
+                    const Divider(height: 24),
                     _buildActionTile(
                       icon: Icons.help_outline,
                       title: "FAQ",
@@ -352,7 +370,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ),
-        Switch(value: value, onChanged: onChanged, activeColor: kAccent),
+        Switch(value: value, onChanged: onChanged, activeThumbColor: kAccent),
       ],
     );
   }
@@ -570,22 +588,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLogoutDialog() {
+    final parentContext = context;
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: parentContext,
+      builder: (dialogContext) => AlertDialog(
         title: const Text("Sign Out"),
         content: const Text("Are you sure you want to sign out?"),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text("Cancel"),
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(parentContext);
+              final dialogNavigator = Navigator.of(dialogContext);
               await AuthService().logout();
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
+              if (!mounted) return;
+              dialogNavigator.pop();
+              navigator.pushReplacement(
                 MaterialPageRoute(builder: (_) => LoginScreen()),
               );
             },

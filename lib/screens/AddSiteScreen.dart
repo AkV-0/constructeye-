@@ -8,7 +8,9 @@ import '../providers/SiteProvider.dart';
 import '../services/AvailabilityService.dart';
 
 class AddSiteScreen extends StatefulWidget {
-  const AddSiteScreen({super.key});
+  final SiteModel? site;
+
+  const AddSiteScreen({super.key, this.site});
 
   @override
   State<AddSiteScreen> createState() => _AddSiteScreenState();
@@ -23,6 +25,17 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
   bool isLoading = false;
   bool isCheckingAvailability = false;
   String? availabilityMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.site != null) {
+      titleController.text = widget.site!.title;
+      locationController.text = widget.site!.location;
+      statusController.text = widget.site!.status;
+      pincodeController.text = widget.site!.pincode;
+    }
+  }
 
   Future<void> _saveSite() async {
     final title = titleController.text.trim();
@@ -39,7 +52,7 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
       ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
       return;
     }
-    final normalizedProgress = '0%';
+    final normalizedProgress = widget.site?.progress ?? '0%';
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(
@@ -54,12 +67,14 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
 
     try {
       final available = await AvailabilityService().checkAvailability(pincode);
+      if (!mounted) return;
 
       if (!available) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Service unavailable in this area')),
         );
 
+        if (!mounted) return;
         setState(() {
           isLoading = false;
         });
@@ -68,33 +83,47 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
       }
 
       final site = SiteModel(
-        id: '',
+        id: widget.site?.id ?? '',
         title: title,
         location: location,
         progress: normalizedProgress,
         status: status,
         pincode: pincode,
-        statusColor: Colors.green,
-        ownerId: currentUser.uid,
+        statusColor: widget.site?.statusColor ?? Colors.green,
+        ownerId: widget.site?.ownerId ?? currentUser.uid,
       );
 
       final role = Provider.of<RoleProvider>(context, listen: false).role;
-      await Provider.of<SiteProvider>(
-        context,
-        listen: false,
-      ).addSite(site, role: role);
+      if (widget.site != null) {
+        await Provider.of<SiteProvider>(
+          context,
+          listen: false,
+        ).updateSite(site, role: role);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Site updated successfully')),
+        );
+      } else {
+        await Provider.of<SiteProvider>(
+          context,
+          listen: false,
+        ).addSite(site, role: role);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Site added successfully')),
+        );
+      }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Site added successfully')));
-
-      Navigator.pop(context);
+      if (!mounted) return;
+      Navigator.pop(context, site);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
 
+    if (!mounted) return;
     setState(() {
       isLoading = false;
     });
@@ -115,6 +144,7 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
     });
 
     final available = await AvailabilityService().checkAvailability(pincode);
+    if (!mounted) return;
 
     setState(() {
       isCheckingAvailability = false;
@@ -142,10 +172,11 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.site != null;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Site'),
-        backgroundColor: const Color(0xFF37353E),
+        title: Text(isEditing ? 'Edit Site' : 'Add Site'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -233,9 +264,12 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
                 ),
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Save Site',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                    : Text(
+                        widget.site != null ? 'Update Site' : 'Save Site',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
                       ),
               ),
             ),

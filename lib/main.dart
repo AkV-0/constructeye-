@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'screens/HomeScreen.dart';
 import 'screens/LoginScreen.dart';
 import 'providers/SiteProvider.dart';
@@ -10,16 +11,65 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint('FCM background message received: ${message.messageId}');
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Start the UI immediately.
   runApp(const ConstructEyeApp());
+
+  // Initialize Firebase Messaging asynchronously after app start so it
+  // doesn't block the initial render (prevents white screen on web).
+  _initFirebaseMessaging();
+}
+
+Future<void> _initFirebaseMessaging() async {
+  try {
+    // Register a background handler if supported.
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    final messaging = FirebaseMessaging.instance;
+
+    // Request permission on supported platforms; on web this will trigger
+    // the browser permission prompt but it's safe because it runs after
+    // the UI is shown.
+    final settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    debugPrint('FCM authorization status: ${settings.authorizationStatus}');
+
+    FirebaseMessaging.onMessage.listen((message) {
+      debugPrint('FCM foreground message received: ${message.messageId}');
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      debugPrint('FCM message opened app: ${message.messageId}');
+    });
+
+    final fcmToken = await messaging.getToken();
+    debugPrint('FCM token: $fcmToken');
+  } catch (e, st) {
+    debugPrint('FCM initialization failed: $e');
+    debugPrint('$st');
+  }
 }
 
 class ConstructEyeApp extends StatelessWidget {
@@ -44,7 +94,9 @@ class ConstructEyeApp extends StatelessWidget {
             theme: ThemeData(
               scaffoldBackgroundColor: const Color(0xFFF4F5F5),
               cardColor: Colors.white,
-              colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF37353E)),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF37353E),
+              ),
               appBarTheme: const AppBarTheme(
                 backgroundColor: Color(0xFF37353E),
                 foregroundColor: Colors.white,

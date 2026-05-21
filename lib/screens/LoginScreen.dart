@@ -5,6 +5,8 @@ import 'HomeScreen.dart';
 import 'SignupScreen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -22,8 +24,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final kCardBg = Theme.of(context).cardColor;
+    final kText = Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
+    const kDark = Color(0xFF37353E);
+    const kAccent = Color(0xFF715A5A);
+
     return Scaffold(
-      backgroundColor: kDark,
+      backgroundColor: isDark ? const Color(0xFF121212) : kDark,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -37,11 +45,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     margin: const EdgeInsets.symmetric(vertical: 32),
                     padding: EdgeInsets.all(isMobile ? 24 : 40),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: kCardBg,
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.12),
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -74,25 +82,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        const Center(
+                        Center(
                           child: Text(
                             "ConstructEye",
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: kDark,
+                              color: isDark ? Colors.white : kDark,
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 6),
 
-                        const Center(
+                        Center(
                           child: Text(
                             "Monitor construction smarter",
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.black54,
+                              color: isDark ? Colors.white70 : Colors.black54,
                             ),
                           ),
                         ),
@@ -100,40 +108,46 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 32),
 
                         // Email
-                        const Text(
+                        Text(
                           "Email Address",
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
+                            color: kText,
                           ),
                         ),
                         const SizedBox(height: 8),
                         TextField(
                           controller: emailController,
                           keyboardType: TextInputType.emailAddress,
+                          style: TextStyle(color: kText),
                           decoration: _inputDeco(
                             "Enter your email",
                             Icons.email_outlined,
+                            isDark,
                           ),
                         ),
 
                         const SizedBox(height: 20),
 
                         // Password
-                        const Text(
+                        Text(
                           "Password",
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
+                            color: kText,
                           ),
                         ),
                         const SizedBox(height: 8),
                         TextField(
                           controller: passwordController,
                           obscureText: !showPassword,
+                          style: TextStyle(color: kText),
                           decoration: _inputDeco(
                             "Enter your password",
                             Icons.lock_outline,
+                            isDark,
                             suffix: IconButton(
                               icon: Icon(
                                 showPassword
@@ -158,12 +172,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Checkbox(
                                   value: rememberMe,
                                   activeColor: kAccent,
+                                  side: isDark ? const BorderSide(color: Colors.white54) : null,
                                   onChanged: (v) =>
                                       setState(() => rememberMe = v ?? false),
                                 ),
-                                const Text(
+                                Text(
                                   "Remember me",
-                                  style: TextStyle(fontSize: 13),
+                                  style: TextStyle(fontSize: 13, color: kText),
                                 ),
                               ],
                             ),
@@ -185,6 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: kAccent,
+                              foregroundColor: Colors.white,
                               elevation: 2,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -217,9 +233,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               "Don't have an account? ",
-                              style: TextStyle(fontSize: 14),
+                              style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : Colors.black87),
                             ),
                             TextButton(
                               onPressed: () => Navigator.push(
@@ -266,6 +282,7 @@ class _LoginScreenState extends State<LoginScreen> {
       emailController.text.trim(),
       passwordController.text.trim(),
     );
+    if (!mounted) return;
     setState(() => loading = false);
     if (user != null) {
       Navigator.pushReplacement(
@@ -293,6 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => loading = true);
     final success = await AuthService().resetPassword(email);
+    if (!mounted) return;
     setState(() => loading = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -307,17 +325,17 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _inputDeco(String hint, IconData prefix, {Widget? suffix}) {
+  InputDecoration _inputDeco(String hint, IconData prefix, bool isDark, {Widget? suffix}) {
     return InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFF4F5F5),
+      fillColor: isDark ? Colors.grey[900] : const Color(0xFFF4F5F5),
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.black38),
+      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
       prefixIcon: Icon(prefix, color: const Color(0xFF715A5A)),
       suffixIcon: suffix,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+        borderSide: BorderSide(color: isDark ? Colors.grey[800]! : const Color(0xFFE0E0E0), width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

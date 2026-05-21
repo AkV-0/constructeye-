@@ -6,6 +6,8 @@ import '../providers/RoleProvider.dart';
 import '../providers/SiteProvider.dart';
 
 class ReportsScreen extends StatefulWidget {
+  const ReportsScreen({super.key});
+
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
@@ -18,14 +20,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Color get kCardBg => Theme.of(context).cardColor;
   Color get kText =>
       Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
+  Color get kSubText => Theme.of(context).brightness == Brightness.dark
+      ? Colors.white70
+      : Colors.black54;
   Color get kDark => const Color(0xFF37353E);
   Color get kAccent => const Color(0xFF715A5A);
 
   @override
   void initState() {
     super.initState();
+    final reportProvider = Provider.of<ReportProvider>(context, listen: false);
     Future.microtask(() {
-      Provider.of<ReportProvider>(context, listen: false).fetchAllReports();
+      reportProvider.fetchAllReports();
     });
   }
 
@@ -64,7 +70,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         "Create and manage project reports",
                         style: TextStyle(
                           fontSize: isMobile ? 13 : 15,
-                          color: Colors.black54,
+                          color: kSubText,
                         ),
                       ),
                     ],
@@ -114,7 +120,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: const Color.fromRGBO(0, 0, 0, 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -137,19 +143,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       Expanded(
                         child: DropdownButton<String?>(
                           value: selectedSiteId,
-                          hint: const Text("All Sites"),
+                          hint: Text("All Sites", style: TextStyle(color: kText.withOpacity(0.6))),
                           isExpanded: true,
+                          dropdownColor: kCardBg,
                           items: [
-                            const DropdownMenuItem<String?>(
+                            DropdownMenuItem<String?>(
                               value: null,
-                              child: Text("All Sites"),
+                              child: Text("All Sites", style: TextStyle(color: kText)),
                             ),
                             ...sites.map((site) {
                               return DropdownMenuItem<String?>(
                                 value: site.id,
-                                child: Text(site.title),
+                                child: Text(site.title, style: TextStyle(color: kText)),
                               );
-                            }).toList(),
+                            }),
                           ],
                           onChanged: (value) {
                             setState(() {
@@ -163,22 +170,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: DropdownButton<String>(
                           value: filterStatus,
                           isExpanded: true,
-                          items: const [
+                          dropdownColor: kCardBg,
+                          style: TextStyle(color: kText),
+                          items: [
                             DropdownMenuItem(
                               value: 'all',
-                              child: Text("All Status"),
+                              child: Text("All Status", style: TextStyle(color: kText)),
                             ),
                             DropdownMenuItem(
                               value: 'pending',
-                              child: Text("Pending"),
+                              child: Text("Pending", style: TextStyle(color: kText)),
                             ),
                             DropdownMenuItem(
                               value: 'in_progress',
-                              child: Text("In Progress"),
+                              child: Text("In Progress", style: TextStyle(color: kText)),
                             ),
                             DropdownMenuItem(
                               value: 'completed',
-                              child: Text("Completed"),
+                              child: Text("Completed", style: TextStyle(color: kText)),
                             ),
                           ],
                           onChanged: (value) {
@@ -216,33 +225,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       .toList();
                 }
 
-                if (filteredReports.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.description_outlined,
-                          size: 48,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          "No reports found",
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
+                  if (filteredReports.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: kCardBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800]! : Colors.grey.shade300),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            size: 48,
+                            color: Colors.grey.shade400,
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                          const SizedBox(height: 12),
+                          Text(
+                            "No reports found",
+                            style: TextStyle(
+                              color: kSubText.withOpacity(0.6),
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
                 final canCreate =
                     Provider.of<RoleProvider>(context, listen: false).isAdmin ||
@@ -278,11 +287,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardBg,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -351,7 +360,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.2),
+                  color: statusColor.withAlpha((0.2 * 255).round()),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -367,7 +376,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: priorityColor.withOpacity(0.2),
+                  color: priorityColor.withAlpha((0.2 * 255).round()),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -425,9 +434,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     String priority = 'medium';
     DateTime? dueDate;
 
+    final parentContext = context;
     showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
+      context: parentContext,
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text("Create New Report"),
           content: SingleChildScrollView(
@@ -528,39 +538,44 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 if (titleController.text.isEmpty ||
                     descriptionController.text.isEmpty ||
                     selectedSite == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
                     const SnackBar(content: Text("Please fill all fields")),
                   );
                   return;
                 }
 
+                final report = ReportModel(
+                  id: '',
+                  siteId: selectedSite!,
+                  title: titleController.text,
+                  description: descriptionController.text,
+                  status: 'pending',
+                  createdAt: DateTime.now(),
+                  dueDate: dueDate,
+                  priority: priority,
+                );
+
+                final reportProvider = Provider.of<ReportProvider>(
+                  parentContext,
+                  listen: false,
+                );
+                final scaffoldMessenger = ScaffoldMessenger.of(parentContext);
+                final dialogNavigator = Navigator.of(dialogContext);
+
                 try {
-                  final report = ReportModel(
-                    id: '',
-                    siteId: selectedSite!,
-                    title: titleController.text,
-                    description: descriptionController.text,
-                    status: 'pending',
-                    createdAt: DateTime.now(),
-                    dueDate: dueDate,
-                    priority: priority,
-                  );
+                  await reportProvider.createReport(report);
+                  if (!mounted) return;
 
-                  await Provider.of<ReportProvider>(
-                    context,
-                    listen: false,
-                  ).createReport(report);
-
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  dialogNavigator.pop();
+                  scaffoldMessenger.showSnackBar(
                     const SnackBar(
                       content: Text("Report created successfully"),
                     ),
                   );
                 } catch (e) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -579,28 +594,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
     ReportModel report,
     ReportProvider reportProvider,
   ) {
+    final parentContext = context;
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: parentContext,
+      builder: (dialogContext) => AlertDialog(
         title: const Text("Delete Report"),
         content: const Text("Are you sure you want to delete this report?"),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text("Cancel"),
           ),
           ElevatedButton(
             onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(parentContext);
+              final dialogNavigator = Navigator.of(dialogContext);
               try {
                 await reportProvider.deleteReport(report.id);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted) return;
+                dialogNavigator.pop();
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text("Report deleted successfully")),
                 );
               } catch (e) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (!mounted) return;
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(

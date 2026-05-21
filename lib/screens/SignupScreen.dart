@@ -31,8 +31,14 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final kCardBg = Theme.of(context).cardColor;
+    final kText = Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
+    const kDark = Color(0xFF37353E);
+    const kAccent = Color(0xFF715A5A);
+
     return Scaffold(
-      backgroundColor: kDark,
+      backgroundColor: isDark ? const Color(0xFF121212) : kDark,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -46,11 +52,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     margin: const EdgeInsets.symmetric(vertical: 32),
                     padding: EdgeInsets.all(isMobile ? 24 : 40),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: kCardBg,
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.12),
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -83,25 +89,25 @@ class _SignupScreenState extends State<SignupScreen> {
 
                         const SizedBox(height: 20),
 
-                        const Center(
+                        Center(
                           child: Text(
                             "Create Your Account",
                             style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.bold,
-                              color: kDark,
+                              color: isDark ? Colors.white : kDark,
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 6),
 
-                        const Center(
+                        Center(
                           child: Text(
                             "Join ConstructEye today",
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.black54,
+                              color: isDark ? Colors.white70 : Colors.black54,
                             ),
                           ),
                         ),
@@ -109,28 +115,34 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 28),
 
                         // Email
-                        _label("Email Address"),
+                        _label("Email Address", kText),
                         const SizedBox(height: 8),
                         TextField(
                           controller: emailController,
                           keyboardType: TextInputType.emailAddress,
+                          style: TextStyle(color: kText),
                           decoration: _inputDeco(
                             "Enter your email",
                             Icons.email_outlined,
+                            isDark,
+                            kAccent,
                           ),
                         ),
 
                         const SizedBox(height: 18),
 
                         // Password
-                        _label("Password"),
+                        _label("Password", kText),
                         const SizedBox(height: 8),
                         TextField(
                           controller: passwordController,
                           obscureText: !showPassword,
+                          style: TextStyle(color: kText),
                           decoration: _inputDeco(
                             "Enter your password",
                             Icons.lock_outline,
+                            isDark,
+                            kAccent,
                             suffix: IconButton(
                               icon: Icon(
                                 showPassword
@@ -147,14 +159,17 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 18),
 
                         // Confirm Password
-                        _label("Confirm Password"),
+                        _label("Confirm Password", kText),
                         const SizedBox(height: 8),
                         TextField(
                           controller: confirmPasswordController,
                           obscureText: !showConfirmPassword,
+                          style: TextStyle(color: kText),
                           decoration: _inputDeco(
                             "Confirm your password",
                             Icons.lock_outline,
+                            isDark,
+                            kAccent,
                             suffix: IconButton(
                               icon: Icon(
                                 showConfirmPassword
@@ -178,6 +193,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: kAccent,
+                              foregroundColor: Colors.white,
                               elevation: 2,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -210,9 +226,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               "Already have an account? ",
-                              style: TextStyle(fontSize: 14),
+                              style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : Colors.black87),
                             ),
                             TextButton(
                               onPressed: () => Navigator.push(
@@ -284,26 +300,26 @@ class _SignupScreenState extends State<SignupScreen> {
     ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
   }
 
-  Widget _label(String text) => Text(
+  Widget _label(String text, Color color) => Text(
     text,
-    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: color),
   );
 
-  InputDecoration _inputDeco(String hint, IconData prefix, {Widget? suffix}) {
+  InputDecoration _inputDeco(String hint, IconData prefix, bool isDark, Color kAccent, {Widget? suffix}) {
     return InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFF4F5F5),
+      fillColor: isDark ? Colors.grey[900] : const Color(0xFFF4F5F5),
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.black38),
+      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
       prefixIcon: Icon(prefix, color: kAccent),
       suffixIcon: suffix,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+        borderSide: BorderSide(color: isDark ? Colors.grey[800]! : const Color(0xFFE0E0E0), width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kAccent, width: 2),
+        borderSide: BorderSide(color: kAccent, width: 2),
       ),
     );
   }

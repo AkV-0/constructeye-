@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
 import 'AddSiteScreen.dart';
@@ -28,6 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Color get kCardBg => Theme.of(context).cardColor;
   Color get kText =>
       Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
+  Color get kSubText => Theme.of(context).brightness == Brightness.dark
+      ? Colors.white70
+      : Colors.black54;
   Color get kDark => const Color(0xFF37353E);
   Color get kAccent => const Color(0xFF715A5A);
 
@@ -76,6 +80,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isMobile) {
       return Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            "ConstructEye",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: CircleAvatar(
+                radius: 17,
+                backgroundColor: kAccent,
+                child: Text(
+                  (FirebaseAuth.instance.currentUser?.email ?? 'U')
+                      .substring(0, 1)
+                      .toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
         drawer: Drawer(backgroundColor: kDark, child: _sidebarContent()),
         body: getSelectedScreen(),
         floatingActionButton: roleProvider.isWorker
@@ -228,7 +257,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _overviewScreen() {
     final isMobile = MediaQuery.of(context).size.width < 768;
     final pad = isMobile ? 16.0 : 28.0;
-    final sites = Provider.of<SiteProvider>(context).sites;
+    final siteProvider = Provider.of<SiteProvider>(context);
+    final sites = siteProvider.sites;
     final reportProvider = Provider.of<ReportProvider>(context);
     final photoProvider = Provider.of<PhotoProvider>(context);
 
@@ -259,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         "Monitor construction projects",
                         style: TextStyle(
                           fontSize: isMobile ? 13 : 15,
-                          color: Colors.black54,
+                          color: kSubText,
                         ),
                       ),
                     ],
@@ -308,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: _statCard(
                           Icons.camera_alt,
-                          photoProvider.allPhotos.length.toString(),
+                          photoProvider.photos.length.toString(),
                           "Photos",
                           isMobile,
                         ),
@@ -338,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: _statCard(
                           Icons.camera_alt,
-                          photoProvider.allPhotos.length.toString(),
+                          photoProvider.photos.length.toString(),
                           "Photos Uploaded",
                           isMobile,
                         ),
@@ -347,6 +377,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
             SizedBox(height: isMobile ? 24 : 36),
+
+            if (siteProvider.errorMessage != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  'Unable to load site data: ${siteProvider.errorMessage}',
+                  style: TextStyle(
+                    fontSize: isMobile ? 13 : 14,
+                    color: Colors.red.shade700,
+                  ),
+                ),
+              ),
+
+            if (siteProvider.errorMessage != null) const SizedBox(height: 16),
 
             Text(
               "Recent Construction Sites",
@@ -395,10 +445,10 @@ class _HomeScreenState extends State<HomeScreen> {
       color: kCardBg,
       borderRadius: BorderRadius.circular(18),
     ),
-    child: const Center(
+    child: Center(
       child: Text(
         "No sites yet. Add your first site!",
-        style: TextStyle(color: Colors.black45, fontSize: 15),
+        style: TextStyle(color: kSubText.withOpacity(0.6), fontSize: 15),
       ),
     ),
   );
@@ -423,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: EdgeInsets.all(isMobile ? 14 : 22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardBg,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -451,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title,
             style: TextStyle(
               fontSize: isMobile ? 11 : 14,
-              color: Colors.black54,
+              color: kSubText,
             ),
           ),
         ],
@@ -465,19 +515,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => SiteDetailsScreen(
-            title: site.title,
-            location: site.location,
-            progress: site.progress,
-            status: site.status,
-            statusColor: site.statusColor,
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => SiteDetailsScreen(site: site)),
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: kCardBg,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -552,14 +594,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         Icons.location_on,
                         size: isMobile ? 14 : 16,
-                        color: Colors.grey,
+                        color: kSubText,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         site.location,
                         style: TextStyle(
                           fontSize: isMobile ? 12 : 14,
-                          color: Colors.grey.shade600,
+                          color: kSubText,
                         ),
                       ),
                     ],
@@ -573,6 +615,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: isMobile ? 12 : 14,
                           fontWeight: FontWeight.w600,
+                          color: kText,
                         ),
                       ),
                       Text(
@@ -591,7 +634,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: LinearProgressIndicator(
                       value: _parseProgressValue(site.progress),
                       minHeight: isMobile ? 6 : 8,
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey.shade200,
                       color: kAccent,
                     ),
                   ),

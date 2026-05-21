@@ -9,12 +9,15 @@ class SiteProvider extends ChangeNotifier {
   List<SiteModel> _sites = [];
 
   bool _isLoading = false;
+  String? _errorMessage;
 
   List<SiteModel> get sites => _sites;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
   Future<void> fetchSites({required String role}) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -28,6 +31,7 @@ class SiteProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint(e.toString());
       _sites = [];
+      _errorMessage = e.toString();
     }
 
     _isLoading = false;

@@ -15,10 +15,12 @@ class _PhotosScreenState extends State<PhotosScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   String? selectedSiteId;
 
-  static const Color kDark = Color(0xFF37353E);
-  static const Color kAccent = Color(0xFF715A5A);
-  static const Color kBg = Color(0xFFF4F5F5);
-  static const Color kText = Color(0xFF37353E);
+  Color get kBg => Theme.of(context).scaffoldBackgroundColor;
+  Color get kCardBg => Theme.of(context).cardColor;
+  Color get kText =>
+      Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
+  Color get kDark => const Color(0xFF37353E);
+  Color get kAccent => const Color(0xFF715A5A);
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +28,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
     final sites = Provider.of<SiteProvider>(context).sites;
     final roleProvider = Provider.of<RoleProvider>(context);
     final canManagePhotos = roleProvider.isAdmin || roleProvider.isWorker;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
       child: Padding(
@@ -57,11 +60,11 @@ class _PhotosScreenState extends State<PhotosScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: kCardBg,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -70,7 +73,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Select a Site",
                       style: TextStyle(
                         fontSize: 16,
@@ -81,7 +84,9 @@ class _PhotosScreenState extends State<PhotosScreen> {
                     const SizedBox(height: 12),
                     DropdownButton<String>(
                       value: selectedSiteId,
-                      hint: const Text("Choose a site to view/upload photos"),
+                      dropdownColor: kCardBg,
+                      style: TextStyle(color: kText),
+                      hint: Text("Choose a site to view/upload photos", style: TextStyle(color: kText.withOpacity(0.6))),
                       isExpanded: true,
                       items: sites.map((site) {
                         return DropdownMenuItem(
@@ -111,11 +116,11 @@ class _PhotosScreenState extends State<PhotosScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: kCardBg,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -124,7 +129,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Upload Photo",
                       style: TextStyle(
                         fontSize: 16,
@@ -211,9 +216,9 @@ class _PhotosScreenState extends State<PhotosScreen> {
                     return Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: kCardBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade300),
                       ),
                       child: Column(
                         children: [
@@ -226,7 +231,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
                           Text(
                             "No photos yet",
                             style: TextStyle(
-                              color: Colors.grey.shade600,
+                              color: isDark ? Colors.white70 : Colors.grey.shade600,
                               fontSize: 16,
                             ),
                           ),

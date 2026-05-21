@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'AddSiteScreen.dart';
 import '../providers/RoleProvider.dart';
 import '../providers/SiteProvider.dart';
-import '../models/SiteModel.dart';
 import 'SiteDetailsScreen.dart';
 
 class MySitesScreen extends StatefulWidget {
@@ -20,9 +19,11 @@ class _MySitesScreenState extends State<MySitesScreen> {
   void initState() {
     super.initState();
 
-    Future.microtask(() {
-      final role = Provider.of<RoleProvider>(context, listen: false).role;
-      Provider.of<SiteProvider>(context, listen: false).fetchSites(role: role);
+    final role = Provider.of<RoleProvider>(context, listen: false).role;
+    final siteProvider = Provider.of<SiteProvider>(context, listen: false);
+    Future.microtask(() async {
+      await siteProvider.fetchSites(role: role);
+      if (!mounted) return;
     });
   }
 
@@ -43,7 +44,6 @@ class _MySitesScreenState extends State<MySitesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Sites'),
-        backgroundColor: const Color(0xFF37353E),
         actions: [
           if (!roleProvider.isWorker)
             IconButton(
@@ -61,6 +61,17 @@ class _MySitesScreenState extends State<MySitesScreen> {
       ),
       body: siteProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : siteProvider.errorMessage != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Error loading sites: ${siteProvider.errorMessage}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.red),
+                ),
+              ),
+            )
           : siteProvider.sites.isEmpty
           ? const Center(
               child: Text('No sites added yet', style: TextStyle(fontSize: 16)),
@@ -103,8 +114,30 @@ class _MySitesScreenState extends State<MySitesScreen> {
                           ],
                         ),
                       ),
-                      trailing: canDelete
-                          ? IconButton(
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (roleProvider.isAdmin ||
+                              (roleProvider.isUser &&
+                                  site.ownerId == currentUserId))
+                            IconButton(
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.blueGrey,
+                              ),
+                              tooltip: 'Edit Site',
+                              onPressed: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => AddSiteScreen(site: site),
+                                  ),
+                                );
+                                await _refresh();
+                              },
+                            ),
+                          if (canDelete)
+                            IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () async {
                                 final confirm = await showDialog<bool>(
@@ -143,19 +176,14 @@ class _MySitesScreenState extends State<MySitesScreen> {
                                   );
                                 }
                               },
-                            )
-                          : null,
+                            ),
+                        ],
+                      ),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => SiteDetailsScreen(
-                              title: site.title,
-                              location: site.location,
-                              progress: site.progress,
-                              status: site.status,
-                              statusColor: site.statusColor,
-                            ),
+                            builder: (_) => SiteDetailsScreen(site: site),
                           ),
                         );
                       },
