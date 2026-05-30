@@ -7,13 +7,13 @@ class AuthService {
 
   // SIGN UP
 
-  Future<User?> signUp(String email, String password) async {
+  Future<User?> signUp(String email, String password, {String role = 'client'}) async {
     try {
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
       final user = userCredential.user;
       if (user != null) {
-        await UserService().createUserProfile(user, role: 'user');
+        await UserService().createUserProfile(user, role: role);
       }
       return user;
     } catch (e) {

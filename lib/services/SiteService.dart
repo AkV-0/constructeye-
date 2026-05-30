@@ -28,11 +28,10 @@ class SiteService {
   Future<List<SiteModel>> fetchAllSites() async {
     final snapshot = await _firestore
         .collectionGroup('sites')
-        .orderBy('createdAt', descending: true)
         .get();
 
     return snapshot.docs.map((doc) {
-      final map = doc.data() as Map<String, dynamic>;
+      final map = doc.data() as Map<String, dynamic>? ?? <String, dynamic>{};
       final ownerId = map['ownerId'] ?? doc.reference.parent.parent?.id ?? '';
       return SiteModel.fromMap({...map, 'ownerId': ownerId}, doc.id);
     }).toList();
@@ -42,13 +41,11 @@ class SiteService {
     final assignedSnapshot = await _firestore
         .collectionGroup('sites')
         .where('assignedTo', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
         .get();
 
     final ownerSnapshot = await _firestore
         .collectionGroup('sites')
         .where('ownerId', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
         .get();
 
     final Map<String, QueryDocumentSnapshot> documents = {};
@@ -62,7 +59,7 @@ class SiteService {
     }
 
     return documents.values.map((doc) {
-      final map = doc.data() as Map<String, dynamic>;
+      final map = doc.data() as Map<String, dynamic>? ?? <String, dynamic>{};
       final ownerId = map['ownerId'] ?? doc.reference.parent.parent?.id ?? '';
       return SiteModel.fromMap({...map, 'ownerId': ownerId}, doc.id);
     }).toList();
@@ -78,3 +75,7 @@ class SiteService {
     await _userSiteCollection(owner).doc(site.id).update(site.toMap());
   }
 }
+
+
+
+

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'SiteDetailsScreen.dart';
+// removed unused import: SiteDetailsScreen.dart
 import '../providers/SiteProvider.dart';
 import '../models/SiteModel.dart';
 
@@ -287,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha((0.04 * 255).round()),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -338,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -390,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
 
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
+                          color: statusColor.withAlpha((0.12 * 255).round()),
 
                           borderRadius: BorderRadius.circular(30),
                         ),

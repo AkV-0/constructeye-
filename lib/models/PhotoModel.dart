@@ -24,32 +24,33 @@ class PhotoModel {
       'siteId': siteId,
       'url': url,
       'caption': caption,
-      'uploadedAt': uploadedAt,
+      'uploadedAt': Timestamp.fromDate(uploadedAt),
       'uploadedBy': uploadedBy,
       'description': description,
     };
   }
 
   factory PhotoModel.fromMap(Map<String, dynamic> map, String docId) {
-    DateTime uploadedAt;
-    if (map['uploadedAt'] is Timestamp) {
-      uploadedAt = (map['uploadedAt'] as Timestamp).toDate();
-    } else if (map['uploadedAt'] is DateTime) {
-      uploadedAt = map['uploadedAt'] as DateTime;
-    } else if (map['uploadedAt'] is String) {
-      uploadedAt = DateTime.tryParse(map['uploadedAt'] as String) ?? DateTime.now();
+    DateTime uploadedAtDate;
+    final timestamp = map['uploadedAt'];
+    if (timestamp is Timestamp) {
+      uploadedAtDate = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      uploadedAtDate = timestamp;
+    } else if (timestamp is String) {
+      uploadedAtDate = DateTime.tryParse(timestamp) ?? DateTime.now();
     } else {
-      uploadedAt = DateTime.now();
+      uploadedAtDate = DateTime.now();
     }
 
     return PhotoModel(
       id: docId,
-      siteId: map['siteId'] ?? '',
-      url: map['url'] ?? '',
-      caption: map['caption'] ?? '',
-      uploadedAt: uploadedAt,
-      uploadedBy: map['uploadedBy'] ?? '',
-      description: map['description'] as String?,
+      siteId: map['siteId']?.toString() ?? '',
+      url: map['url']?.toString() ?? '',
+      caption: map['caption']?.toString() ?? '',
+      uploadedAt: uploadedAtDate,
+      uploadedBy: map['uploadedBy']?.toString() ?? '',
+      description: map['description']?.toString(),
     );
   }
 

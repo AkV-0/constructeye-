@@ -1,13 +1,15 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../models/SiteModel.dart';
 import '../providers/PhotoProvider.dart';
 import '../providers/RoleProvider.dart';
 import '../providers/SiteProvider.dart';
 
 class PhotosScreen extends StatefulWidget {
+  const PhotosScreen({super.key});
+
   @override
   State<PhotosScreen> createState() => _PhotosScreenState();
 }
@@ -28,7 +30,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
     final isMobile = MediaQuery.of(context).size.width < 768;
     final sites = Provider.of<SiteProvider>(context).sites;
     final roleProvider = Provider.of<RoleProvider>(context);
-    final canManagePhotos = roleProvider.isAdmin || roleProvider.isWorker;
+    final canManagePhotos = roleProvider.isAdmin || roleProvider.isExecutive;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
@@ -65,7 +67,9 @@ class _PhotosScreenState extends State<PhotosScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                      color: Colors.black.withAlpha(
+                        ((isDark ? 0.2 : 0.05) * 255).round(),
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -87,7 +91,12 @@ class _PhotosScreenState extends State<PhotosScreen> {
                       value: selectedSiteId,
                       dropdownColor: kCardBg,
                       style: TextStyle(color: kText),
-                      hint: Text("Choose a site to view/upload photos", style: TextStyle(color: kText.withOpacity(0.6))),
+                      hint: Text(
+                        "Choose a site to view/upload photos",
+                        style: TextStyle(
+                          color: kText.withAlpha((0.6 * 255).round()),
+                        ),
+                      ),
                       isExpanded: true,
                       items: sites.map((site) {
                         return DropdownMenuItem(
@@ -121,7 +130,9 @@ class _PhotosScreenState extends State<PhotosScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                      color: Colors.black.withAlpha(
+                        ((isDark ? 0.2 : 0.05) * 255).round(),
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -219,7 +230,11 @@ class _PhotosScreenState extends State<PhotosScreen> {
                       decoration: BoxDecoration(
                         color: kCardBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey.shade300),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.grey[800]!
+                              : Colors.grey.shade300,
+                        ),
                       ),
                       child: Column(
                         children: [
@@ -232,7 +247,9 @@ class _PhotosScreenState extends State<PhotosScreen> {
                           Text(
                             "No photos yet",
                             style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.grey.shade600,
+                              color: isDark
+                                  ? Colors.white70
+                                  : Colors.grey.shade600,
                               fontSize: 16,
                             ),
                           ),
@@ -278,7 +295,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha((0.1 * 255).round()),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -311,8 +328,8 @@ class _PhotosScreenState extends State<PhotosScreen> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(0.8),
-                    Colors.black.withOpacity(0.0),
+                    Colors.black.withAlpha((0.8 * 255).round()),
+                    Colors.black.withAlpha((0.0 * 255).round()),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -377,13 +394,13 @@ class _PhotosScreenState extends State<PhotosScreen> {
       final XFile? pickedFile = source == 'camera'
           ? await _imagePicker.pickImage(
               source: ImageSource.camera,
-              imageQuality: 70,
-              maxWidth: 1200,
+              imageQuality: 50, // Added compression
+              maxWidth: 1000,   // Resize for faster upload
             )
           : await _imagePicker.pickImage(
               source: ImageSource.gallery,
-              imageQuality: 70,
-              maxWidth: 1200,
+              imageQuality: 50, // Added compression
+              maxWidth: 1000,   // Resize for faster upload
             );
 
       if (pickedFile != null && selectedSiteId != null) {
@@ -402,113 +419,128 @@ class _PhotosScreenState extends State<PhotosScreen> {
     final captionController = TextEditingController();
     final descriptionController = TextEditingController();
     bool isUploading = false;
+    Uint8List? previewBytes;
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text("Add Photo Details"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    File(pickedFile.path),
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: captionController,
-                  enabled: !isUploading,
-                  decoration: InputDecoration(
-                    labelText: "Caption",
-                    hintText: "Enter a caption for this photo",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+      builder: (context) => FutureBuilder<Uint8List>(
+        future: pickedFile.readAsBytes(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            previewBytes = snapshot.data;
+          }
+          return StatefulBuilder(
+            builder: (context, setDialogState) => AlertDialog(
+              title: const Text("Add Photo Details"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (previewBytes != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            previewBytes!,
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    TextField(
+                      controller: captionController,
+                      enabled: !isUploading,
+                      decoration: InputDecoration(
+                        labelText: "Caption",
+                        hintText: "Enter a caption for this photo",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descriptionController,
-                  enabled: !isUploading,
-                  decoration: InputDecoration(
-                    labelText: "Description (Optional)",
-                    hintText: "Enter additional details",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      enabled: !isUploading,
+                      decoration: InputDecoration(
+                        labelText: "Description (Optional)",
+                        hintText: "Enter additional details",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      maxLines: 3,
                     ),
-                  ),
-                  maxLines: 3,
+                    if (isUploading) ...[
+                      const SizedBox(height: 20),
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 8),
+                      const Text("Uploading photo..."),
+                    ],
+                  ],
                 ),
-                if (isUploading) ...[
-                  const SizedBox(height: 20),
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 8),
-                  const Text("Uploading photo..."),
-                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isUploading ? null : () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: isUploading || previewBytes == null
+                      ? null
+                      : () async {
+                          if (captionController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Please enter a caption"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          setDialogState(() => isUploading = true);
+
+                          try {
+                            await Provider.of<PhotoProvider>(
+                              context,
+                              listen: false,
+                            ).uploadPhoto(
+                              selectedSiteId!,
+                              previewBytes!,
+                              captionController.text,
+                              description: descriptionController.text.isEmpty
+                                  ? null
+                                  : descriptionController.text,
+                            );
+
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Photo uploaded successfully"),
+                              ),
+                            );
+                          } catch (e) {
+                            setDialogState(() => isUploading = false);
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kAccent,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("Upload"),
+                ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isUploading ? null : () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: isUploading
-                  ? null
-                  : () async {
-                      if (captionController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Please enter a caption")),
-                        );
-                        return;
-                      }
-
-                      setDialogState(() => isUploading = true);
-
-                      try {
-                        await Provider.of<PhotoProvider>(
-                          context,
-                          listen: false,
-                        ).uploadPhoto(
-                          selectedSiteId!,
-                          pickedFile.path,
-                          captionController.text,
-                          description: descriptionController.text.isEmpty
-                              ? null
-                              : descriptionController.text,
-                        );
-
-                        if (!mounted) return;
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text("Photo uploaded successfully")),
-                        );
-                      } catch (e) {
-                        setDialogState(() => isUploading = false);
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kAccent,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text("Upload"),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

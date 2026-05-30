@@ -1,623 +1,227 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+
+import '../providers/ReportProvider.dart';
 import '../providers/RoleProvider.dart';
-import '../providers/ThemeProvider.dart';
-import '../services/AuthService.dart';
-import 'LoginScreen.dart';
-import 'availability_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool notificationsEnabled = true;
+class ReportsScreen extends StatelessWidget {
+  ReportsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
-    final user = FirebaseAuth.instance.currentUser;
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
+    final reportsProvider = Provider.of<ReportProvider>(context);
+    final roleProvider = Provider.of<RoleProvider>(context);
 
-    final kBg = isDark ? Colors.grey[900] : const Color(0xFFF4F5F5);
-    final kCardBg = isDark ? Colors.grey[850] : Colors.white;
-    final kText = isDark ? Colors.white : const Color(0xFF37353E);
-    const kAccent = Color(0xFF715A5A);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final Color kBg = isDark
+        ? const Color(0xFF212121)
+        : const Color(0xFFD3DAD9);
+
+    final Color kCard = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+
+    final Color kText = isDark ? Colors.white : const Color(0xFF212121);
+
+    final Color kDark = const Color(0xFF37353E);
+
+    final Color kAccent = const Color(0xFF715A5A);
 
     return Scaffold(
       backgroundColor: kBg,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? 16 : 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Text(
-                "Settings",
-                style: TextStyle(
-                  fontSize: isMobile ? 24 : 36,
-                  fontWeight: FontWeight.bold,
-                  color: kText,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Manage app preferences and account settings",
-                style: TextStyle(
-                  fontSize: isMobile ? 13 : 15,
-                  color: isDark ? Colors.white70 : Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 24),
 
-              // User Profile Section
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: kCardBg,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color.fromRGBO(0, 0, 0, 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Account Information",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: kText,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
+      appBar: AppBar(
+        title: const Text("Reports"),
+        backgroundColor: kDark,
+        foregroundColor: Colors.white,
+      ),
+
+      floatingActionButton:
+          roleProvider.isAdmin || roleProvider.isExecutive
+          ? FloatingActionButton(
+              backgroundColor: kAccent,
+              child: const Icon(Icons.add),
+              onPressed: () {
+                _showAddReportDialog(context, isDark);
+              },
+            )
+          : null,
+
+      body: reportsProvider.reports.isEmpty
+          ? Center(
+              child: Text(
+                "No reports available",
+                style: TextStyle(fontSize: 18, color: kText),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: reportsProvider.reports.length,
+
+              itemBuilder: (context, index) {
+                final report = reportsProvider.reports[index];
+
+                return Card(
+                  elevation: 5,
+                  color: kCard,
+
+                  margin: const EdgeInsets.only(bottom: 16),
+
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+
                       children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: kAccent,
-                          child: Text(
-                            (user?.email ?? 'JD')[0].toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        Text(
+                          report.title,
+
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: kText,
                           ),
                         ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          report.description,
+
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: kText.withOpacity(0.85),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+
+                          decoration: BoxDecoration(
+                            color: kAccent.withOpacity(0.15),
+
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+
+                          child: Row(
                             children: [
+                              Icon(Icons.engineering, color: kAccent, size: 20),
+
+                              const SizedBox(width: 8),
+
                               Text(
-                                user?.email ?? 'User',
+                                "Field Engineer Report",
+
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  color: kAccent,
                                   fontWeight: FontWeight.w600,
-                                  color: kText,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                Provider.of<RoleProvider>(
-                                  context,
-                                ).role.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark
-                                      ? Colors.grey[400]
-                                      : Colors.blueGrey.shade700,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Active',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.green.shade600,
-                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
                           ),
                         ),
+
+                        const SizedBox(height: 14),
+
+                        Row(
+                          children: [
+                            Icon(Icons.access_time, size: 18, color: kAccent),
+
+                            const SizedBox(width: 6),
+
+                            Text(
+                              "Recent Update",
+
+                              style: TextStyle(color: kText),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Application Settings
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: kCardBg,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color.fromRGBO(0, 0, 0, 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "App Preferences",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: kText,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSettingTile(
-                      icon: Icons.notifications,
-                      title: "Notifications",
-                      subtitle: "Receive app notifications",
-                      value: notificationsEnabled,
-                      onChanged: (value) {
-                        setState(() => notificationsEnabled = value);
-                      },
-                      textColor: kText,
-                    ),
-                    const Divider(height: 24),
-                    _buildSettingTile(
-                      icon: Icons.dark_mode,
-                      title: "Dark Mode",
-                      subtitle: "Use dark theme",
-                      value: isDark,
-                      onChanged: (value) {
-                        themeProvider.toggleTheme(value);
-                      },
-                      textColor: kText,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // About Section
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: kCardBg,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color.fromRGBO(0, 0, 0, 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "About ConstructEye",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: kText,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildInfoRow("App Name", "ConstructEye", kText),
-                    const SizedBox(height: 12),
-                    _buildInfoRow("Version", "1.0.0", kText),
-                    const SizedBox(height: 12),
-                    _buildInfoRow("Build", "1", kText),
-                    const SizedBox(height: 12),
-                    _buildInfoRow(
-                      "Platform",
-                      Theme.of(context).platform == TargetPlatform.android
-                          ? "Android"
-                          : "iOS",
-                      kText,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Help & Support
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: kCardBg,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color.fromRGBO(0, 0, 0, 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Help & Support",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: kText,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildActionTile(
-                      icon: Icons.local_shipping,
-                      title: "Check Availability",
-                      subtitle: "Verify service availability by pincode",
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AvailabilityScreen(),
-                        ),
-                      ),
-                      textColor: kText,
-                    ),
-                    const Divider(height: 24),
-                    _buildActionTile(
-                      icon: Icons.help_outline,
-                      title: "FAQ",
-                      subtitle: "Frequently asked questions",
-                      onTap: () => _showFAQ(kText),
-                      textColor: kText,
-                    ),
-                    const Divider(height: 24),
-                    _buildActionTile(
-                      icon: Icons.mail_outline,
-                      title: "Contact Support",
-                      subtitle: "Get help from our team",
-                      onTap: () => _showContactSupport(),
-                      textColor: kText,
-                    ),
-                    const Divider(height: 24),
-                    _buildActionTile(
-                      icon: Icons.description_outlined,
-                      title: "Terms & Privacy",
-                      subtitle: "View our policies",
-                      onTap: () => _showTermsPrivacy(),
-                      textColor: kText,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Logout Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _showLogoutDialog,
-                  icon: const Icon(Icons.logout),
-                  label: const Text("Sign Out"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade600,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required Function(bool) onChanged,
-    required Color textColor,
-  }) {
-    const kAccent = Color(0xFF715A5A);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, color: kAccent, size: 20),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.only(left: 32),
-                child: Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Switch(value: value, onChanged: onChanged, activeThumbColor: kAccent),
-      ],
-    );
-  }
-
-  Widget _buildActionTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required Color textColor,
-  }) {
-    const kAccent = Color(0xFF715A5A);
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(icon, color: kAccent, size: 20),
-                    const SizedBox(width: 12),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.only(left: 32),
-                  child: Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                ),
-              ],
+                );
+              },
             ),
-          ),
-          Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 16),
-        ],
-      ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value, Color textColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: textColor,
-          ),
-        ),
-      ],
-    );
-  }
+  void _showAddReportDialog(BuildContext context, bool isDark) {
+    final titleController = TextEditingController();
 
-  void _showFAQ(Color textColor) {
+    final descriptionController = TextEditingController();
+
+    final Color kBg = isDark ? const Color(0xFF212121) : Colors.white;
+
+    final Color kText = isDark ? Colors.white : const Color(0xFF212121);
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Frequently Asked Questions"),
-        content: SingleChildScrollView(
-          child: Column(
+
+      builder: (_) {
+        return AlertDialog(
+          backgroundColor: kBg,
+
+          title: Text("Add Report", style: TextStyle(color: kText)),
+
+          content: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+
             children: [
-              _buildFAQItem(
-                "How do I add a new site?",
-                "Click the '+' button and fill in the site details.",
-                textColor,
-              ),
-              _buildFAQItem(
-                "How do I upload photos?",
-                "Go to the Photos section, select a site, and tap the camera or gallery button.",
-                textColor,
-              ),
-              _buildFAQItem(
-                "Can I edit a report after creation?",
-                "Yes, you can update the status and other details of reports.",
-                textColor,
-              ),
-              _buildFAQItem(
-                "Is my data secure?",
-                "Yes, all data is encrypted and securely stored in Firebase.",
-                textColor,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
-  }
+              TextField(
+                controller: titleController,
 
-  Widget _buildFAQItem(String question, String answer, Color textColor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            question,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-              color: textColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            answer,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
-          ),
-        ],
-      ),
-    );
-  }
+                style: TextStyle(color: kText),
 
-  void _showContactSupport() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Contact Support"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              "Contact us at:",
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            SizedBox(height: 8),
-            Text("Email: support@constructeye.com"),
-            SizedBox(height: 8),
-            Text("Phone: +1 (555) 123-4567"),
-            SizedBox(height: 8),
-            Text("Hours: Monday - Friday, 9 AM - 5 PM EST"),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
-  }
+                decoration: InputDecoration(
+                  labelText: "Report Title",
+                  labelStyle: TextStyle(color: kText),
+                ),
+              ),
 
-  void _showTermsPrivacy() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Terms & Privacy"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Privacy Policy",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "We collect and protect your data according to industry standards. Your information is encrypted and never shared with third parties.",
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-              ),
               const SizedBox(height: 16),
-              const Text(
-                "Terms of Service",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "By using ConstructEye, you agree to use the app responsibly and not violate any local laws or regulations.",
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+
+              TextField(
+                controller: descriptionController,
+                maxLines: 4,
+
+                style: TextStyle(color: kText),
+
+                decoration: InputDecoration(
+                  labelText: "Description",
+                  labelStyle: TextStyle(color: kText),
+                ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _showLogoutDialog() {
-    final parentContext = context;
-    showDialog(
-      context: parentContext,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("Sign Out"),
-        content: const Text("Are you sure you want to sign out?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final navigator = Navigator.of(parentContext);
-              final dialogNavigator = Navigator.of(dialogContext);
-              await AuthService().logout();
-              if (!mounted) return;
-              dialogNavigator.pop();
-              navigator.pushReplacement(
-                MaterialPageRoute(builder: (_) => LoginScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-              foregroundColor: Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+
+              child: const Text("Cancel"),
             ),
-            child: const Text("Sign Out"),
-          ),
-        ],
-      ),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

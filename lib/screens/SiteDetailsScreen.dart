@@ -1,58 +1,35 @@
-import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 
 import '../models/SiteModel.dart';
-import '../providers/PhotoProvider.dart';
-import 'AddSiteScreen.dart';
 
-class SiteDetailsScreen extends StatefulWidget {
-  final SiteModel site;
+class SiteDetailsScreen extends StatelessWidget {
+  final String title;
+  final String location;
+  final String progress;
+  final String status;
+  final Color statusColor;
 
-  const SiteDetailsScreen({super.key, required this.site});
-
-  @override
-  State<SiteDetailsScreen> createState() => _SiteDetailsScreenState();
-}
-
-class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
-  late SiteModel _site;
-  Future<SiteMetrics>? _metricsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _site = widget.site;
-    _metricsFuture = _fetchSiteMetrics();
-  }
-
-  Future<SiteMetrics> _fetchSiteMetrics() async {
-    final firestore = FirebaseFirestore.instance;
-
-    final photosQuery = firestore
-        .collection('photos')
-        .where('siteId', isEqualTo: _site.id)
-        .get();
-
-    final reportsQuery = firestore
-        .collection('reports')
-        .where('siteId', isEqualTo: _site.id)
-        .get();
-
-    final results = await Future.wait([photosQuery, reportsQuery]);
-
-    final photosCount = results[0].docs.length;
-    final reportsCount = results[1].docs.length;
-    final workersCount = _site.assignedTo?.isNotEmpty == true ? 1 : 0;
-
-    return SiteMetrics(
-      photos: photosCount,
-      reports: reportsCount,
-      workers: workersCount,
-    );
-  }
+  SiteDetailsScreen({
+    super.key,
+    SiteModel? site,
+    String? title,
+    String? location,
+    String? progress,
+    String? status,
+    Color? statusColor,
+  }) : assert(
+         site != null ||
+             (title != null &&
+                 location != null &&
+                 progress != null &&
+                 status != null &&
+                 statusColor != null),
+       ),
+       title = title ?? site!.title,
+       location = location ?? site!.location,
+       progress = progress ?? site!.progress,
+       status = status ?? site!.status,
+       statusColor = statusColor ?? site!.statusColor;
 
   @override
   Widget build(BuildContext context) {
@@ -60,246 +37,197 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
     final pad = isMobile ? 16.0 : 28.0;
     final imgH = isMobile ? 200.0 : 320.0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final kText = isDark ? Colors.white : const Color(0xFF37353E);
+    final kText = isDark ? Colors.white : const Color(0xFF212121);
     final kSubText = isDark ? Colors.white70 : Colors.black54;
-    const kDark = Color(0xFF37353E);
+    const kDark = Color(0xFF212121);
     const kAccent = Color(0xFF715A5A);
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: kDark,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          _site.title,
+          title,
           style: const TextStyle(color: Colors.white, fontSize: 17),
           overflow: TextOverflow.ellipsis,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: 'Edit site',
-            onPressed: () async {
-              final updatedSite = await Navigator.push<SiteModel?>(
-                context,
-                MaterialPageRoute(builder: (_) => AddSiteScreen(site: _site)),
-              );
-              if (!mounted) return;
-              if (updatedSite != null) {
-                _site = updatedSite;
-              }
-              setState(() {
-                _metricsFuture = _fetchSiteMetrics();
-              });
-            },
-          ),
-        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Logic to quickly upload a photo for this specific site
-          _showQuickUploadOptions(context);
-        },
-        backgroundColor: kAccent,
-        icon: const Icon(Icons.add_a_photo, color: Colors.white),
-        label: const Text("Upload Photo", style: TextStyle(color: Colors.white)),
-      ),
-      body: FutureBuilder<SiteMetrics>(
-        future: _metricsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Failed to load site details. ${snapshot.error}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, color: Colors.red),
-                ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(pad),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hero image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.network(
+                'https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1200&auto=format&fit=crop',
+                height: imgH,
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
-            );
-          }
+            ),
 
-          final metrics =
-              snapshot.data ?? SiteMetrics(photos: 0, reports: 0, workers: 0);
+            SizedBox(height: isMobile ? 20 : 28),
 
-          return SingleChildScrollView(
-            padding: EdgeInsets.all(pad),
-            child: Column(
+            // Title + status badge
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1200&auto=format&fit=crop',
-                    height: imgH,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-
-                SizedBox(height: isMobile ? 20 : 28),
-
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _site.title,
-                        style: TextStyle(
-                          fontSize: isMobile ? 22 : 34,
-                          fontWeight: FontWeight.bold,
-                          color: kText,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _site.statusColor.withAlpha(
-                          (0.12 * 255).round(),
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _site.status,
-                        style: TextStyle(
-                          color: _site.statusColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: isMobile ? 12 : 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      color: isDark ? Colors.white70 : Colors.grey,
-                      size: isMobile ? 16 : 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _site.location,
-                      style: TextStyle(
-                        fontSize: isMobile ? 14 : 16,
-                        color: kSubText,
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: isMobile ? 28 : 36),
-
-                Text(
-                  'Project Progress',
-                  style: TextStyle(
-                    fontSize: isMobile ? 17 : 22,
-                    fontWeight: FontWeight.bold,
-                    color: kText,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: LinearProgressIndicator(
-                    value: _parseProgressValue(_site.progress),
-                    minHeight: isMobile ? 12 : 16,
-                    backgroundColor: Colors.grey.shade300,
-                    color: _site.statusColor,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerRight,
+                Expanded(
                   child: Text(
-                    _site.progress,
+                    title,
                     style: TextStyle(
-                      fontSize: isMobile ? 16 : 20,
+                      fontSize: isMobile ? 22 : 34,
                       fontWeight: FontWeight.bold,
-                      color: kAccent,
+                      color: kText,
                     ),
                   ),
                 ),
-
-                SizedBox(height: isMobile ? 28 : 40),
-
-                isMobile
-                    ? Column(
-                        children: [
-                          _infoCard(
-                            context,
-                            Icons.groups,
-                            metrics.workers.toString(),
-                            'Workers',
-                            isMobile,
-                          ),
-                          const SizedBox(height: 14),
-                          _infoCard(
-                            context,
-                            Icons.photo_camera,
-                            metrics.photos.toString(),
-                            'Photos',
-                            isMobile,
-                          ),
-                          const SizedBox(height: 14),
-                          _infoCard(
-                            context,
-                            Icons.description,
-                            metrics.reports.toString(),
-                            'Reports',
-                            isMobile,
-                          ),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          Expanded(
-                            child: _infoCard(
-                              context,
-                              Icons.groups,
-                              metrics.workers.toString(),
-                              'Workers',
-                              isMobile,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: _infoCard(
-                              context,
-                              Icons.photo_camera,
-                              metrics.photos.toString(),
-                              'Photos',
-                              isMobile,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: _infoCard(
-                              context,
-                              Icons.description,
-                              metrics.reports.toString(),
-                              'Reports',
-                              isMobile,
-                            ),
-                          ),
-                        ],
-                      ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withAlpha((0.12 * 255).round()),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 12 : 14,
+                    ),
+                  ),
+                ),
               ],
             ),
-          );
-        },
+
+            const SizedBox(height: 12),
+
+            // Location
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  color: isDark ? Colors.white70 : Colors.grey,
+                  size: isMobile ? 16 : 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  location,
+                  style: TextStyle(
+                    fontSize: isMobile ? 14 : 16,
+                    color: kSubText,
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: isMobile ? 28 : 36),
+
+            // Progress section
+            Text(
+              "Project Progress",
+              style: TextStyle(
+                fontSize: isMobile ? 17 : 22,
+                fontWeight: FontWeight.bold,
+                color: kText,
+              ),
+            ),
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: LinearProgressIndicator(
+                value: _parseProgressValue(progress),
+                minHeight: isMobile ? 12 : 16,
+                backgroundColor: Colors.grey.shade300,
+                color: statusColor,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                progress,
+                style: TextStyle(
+                  fontSize: isMobile ? 16 : 20,
+                  fontWeight: FontWeight.bold,
+                  color: kAccent,
+                ),
+              ),
+            ),
+
+            SizedBox(height: isMobile ? 28 : 40),
+
+            // Info cards — row on desktop, column on mobile
+            isMobile
+                ? Column(
+                    children: [
+                      _infoCard(
+                        context,
+                        Icons.groups,
+                        "42",
+                        "Workers",
+                        isMobile,
+                      ),
+                      const SizedBox(height: 14),
+                      _infoCard(
+                        context,
+                        Icons.photo_camera,
+                        "182",
+                        "Photos",
+                        isMobile,
+                      ),
+                      const SizedBox(height: 14),
+                      _infoCard(
+                        context,
+                        Icons.description,
+                        "24",
+                        "Reports",
+                        isMobile,
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        child: _infoCard(
+                          context,
+                          Icons.groups,
+                          "42",
+                          "Workers",
+                          isMobile,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: _infoCard(
+                          context,
+                          Icons.photo_camera,
+                          "182",
+                          "Photos",
+                          isMobile,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: _infoCard(
+                          context,
+                          Icons.description,
+                          "24",
+                          "Reports",
+                          isMobile,
+                        ),
+                      ),
+                    ],
+                  ),
+          ],
+        ),
       ),
     );
   }
@@ -309,139 +237,6 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
     final parsed = double.tryParse(cleaned);
     if (parsed == null) return 0.0;
     return parsed.clamp(0.0, 100.0) / 100.0;
-  }
-
-  void _showQuickUploadOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                "Upload Photo",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text("Take Photo"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickAndUpload(context, 'camera');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.image),
-              title: const Text("From Gallery"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickAndUpload(context, 'gallery');
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickAndUpload(BuildContext context, String source) async {
-    final picker = ImagePicker();
-    try {
-      final XFile? file = source == 'camera'
-          ? await picker.pickImage(source: ImageSource.camera, imageQuality: 70)
-          : await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-
-      if (file != null) {
-        if (!mounted) return;
-        _showUploadDialog(context, file);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error picking image: $e")),
-      );
-    }
-  }
-
-  void _showUploadDialog(BuildContext context, XFile file) {
-    final captionController = TextEditingController();
-    bool isUploading = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text("Upload Photo"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(File(file.path), height: 120, fit: BoxFit.cover),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: captionController,
-                enabled: !isUploading,
-                decoration: const InputDecoration(
-                  labelText: "Caption",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              if (isUploading) ...[
-                const SizedBox(height: 16),
-                const CircularProgressIndicator(),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: isUploading ? null : () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: isUploading
-                  ? null
-                  : () async {
-                      if (captionController.text.isEmpty) return;
-                      setDialogState(() => isUploading = true);
-                      try {
-                        await Provider.of<PhotoProvider>(context, listen: false)
-                            .uploadPhoto(
-                          _site.id,
-                          file.path,
-                          captionController.text,
-                        );
-                        if (!mounted) return;
-                        Navigator.pop(context);
-                        setState(() {
-                          _metricsFuture = _fetchSiteMetrics();
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Photo uploaded!")),
-                        );
-                      } catch (e) {
-                        setDialogState(() => isUploading = false);
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Upload failed: $e")),
-                        );
-                      }
-                    },
-              child: const Text("Upload"),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _infoCard(
@@ -459,6 +254,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
     const kAccent = Color(0xFF715A5A);
 
     return Container(
+      // On mobile, full-width horizontal card; on desktop, square-ish card
       padding: isMobile
           ? const EdgeInsets.symmetric(horizontal: 20, vertical: 16)
           : const EdgeInsets.all(24),
@@ -474,6 +270,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
         ],
       ),
       child: isMobile
+          // Horizontal layout on mobile
           ? Row(
               children: [
                 Container(
@@ -504,6 +301,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                 ),
               ],
             )
+          // Vertical layout on desktop
           : Column(
               children: [
                 Icon(icon, size: 34, color: kAccent),
@@ -522,16 +320,4 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
             ),
     );
   }
-}
-
-class SiteMetrics {
-  final int photos;
-  final int reports;
-  final int workers;
-
-  SiteMetrics({
-    required this.photos,
-    required this.reports,
-    required this.workers,
-  });
 }

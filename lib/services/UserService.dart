@@ -8,7 +8,7 @@ class UserService {
 
   CollectionReference get _usersCollection => _firestore.collection('users');
 
-  Future<void> createUserProfile(User user, {String role = 'user'}) async {
+  Future<void> createUserProfile(User user, {String role = 'client'}) async {
     final doc = _usersCollection.doc(user.uid);
     final snapshot = await doc.get();
     if (!snapshot.exists) {

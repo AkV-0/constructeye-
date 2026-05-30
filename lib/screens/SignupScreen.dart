@@ -5,6 +5,8 @@ import 'HomeScreen.dart';
 import 'LoginScreen.dart';
 
 class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
+
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
@@ -17,6 +19,9 @@ class _SignupScreenState extends State<SignupScreen> {
   bool loading = false;
   bool showPassword = false;
   bool showConfirmPassword = false;
+  
+  // Role Selection State
+  String selectedRole = 'client';
 
   static const Color kDark = Color(0xFF37353E);
   static const Color kAccent = Color(0xFF715A5A);
@@ -33,7 +38,8 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final kCardBg = Theme.of(context).cardColor;
-    final kText = Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
+    final kText =
+        Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
     const kDark = Color(0xFF37353E);
     const kAccent = Color(0xFF715A5A);
 
@@ -56,7 +62,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+                          color: Colors.black.withAlpha(
+                            ((isDark ? 0.3 : 0.12) * 255).round(),
+                          ),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -127,6 +135,31 @@ class _SignupScreenState extends State<SignupScreen> {
                             isDark,
                             kAccent,
                           ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // Role Selection Dropdown
+                        _label("Select Role", kText),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: selectedRole,
+                          dropdownColor: kCardBg,
+                          style: TextStyle(color: kText, fontSize: 16),
+                          decoration: _inputDeco(
+                            "Select your role",
+                            Icons.badge_outlined,
+                            isDark,
+                            kAccent,
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'client', child: Text('Client')),
+                            DropdownMenuItem(value: 'executive', child: Text('Executive/Engineer')),
+                            // Admin accounts should only be created via Firebase Console
+                          ],
+                          onChanged: (value) {
+                            setState(() => selectedRole = value ?? 'client');
+                          },
                         ),
 
                         const SizedBox(height: 18),
@@ -228,13 +261,16 @@ class _SignupScreenState extends State<SignupScreen> {
                           children: [
                             Text(
                               "Already have an account? ",
-                              style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : Colors.black87),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
                             ),
                             TextButton(
                               onPressed: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => LoginScreen(),
+                                  builder: (_) => const LoginScreen(),
                                 ),
                               ),
                               style: TextButton.styleFrom(
@@ -278,16 +314,23 @@ class _SignupScreenState extends State<SignupScreen> {
       _snack("Password must be at least 6 characters", color: Colors.orange);
       return;
     }
+    
     setState(() => loading = true);
+    
+    // Passing the state variable selectedRole into the updated signUp function
     final user = await AuthService().signUp(
       emailController.text.trim(),
       passwordController.text.trim(),
+      role: selectedRole,
     );
+    
     setState(() => loading = false);
+    if (!mounted) return;
+    
     if (user != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => HomeScreen()),
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } else {
       _snack("Signup Failed", color: Colors.red);
@@ -305,7 +348,13 @@ class _SignupScreenState extends State<SignupScreen> {
     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: color),
   );
 
-  InputDecoration _inputDeco(String hint, IconData prefix, bool isDark, Color kAccent, {Widget? suffix}) {
+  InputDecoration _inputDeco(
+    String hint,
+    IconData prefix,
+    bool isDark,
+    Color kAccent, {
+    Widget? suffix,
+  }) {
     return InputDecoration(
       filled: true,
       fillColor: isDark ? Colors.grey[900] : const Color(0xFFF4F5F5),
@@ -315,7 +364,10 @@ class _SignupScreenState extends State<SignupScreen> {
       suffixIcon: suffix,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: isDark ? Colors.grey[800]! : const Color(0xFFE0E0E0), width: 1.5),
+        borderSide: BorderSide(
+          color: isDark ? Colors.grey[800]! : const Color(0xFFE0E0E0),
+          width: 1.5,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

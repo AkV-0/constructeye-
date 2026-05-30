@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../models/SiteModel.dart';
+
 class SiteDetailsScreen extends StatelessWidget {
   final String title;
   final String location;
@@ -7,14 +9,27 @@ class SiteDetailsScreen extends StatelessWidget {
   final String status;
   final Color statusColor;
 
-  const SiteDetailsScreen({
+  SiteDetailsScreen({
     super.key,
-    required this.title,
-    required this.location,
-    required this.progress,
-    required this.status,
-    required this.statusColor,
-  });
+    SiteModel? site,
+    String? title,
+    String? location,
+    String? progress,
+    String? status,
+    Color? statusColor,
+  }) : assert(
+         site != null ||
+             (title != null &&
+                 location != null &&
+                 progress != null &&
+                 status != null &&
+                 statusColor != null),
+       ),
+       title = title ?? site!.title,
+       location = location ?? site!.location,
+       progress = progress ?? site!.progress,
+       status = status ?? site!.status,
+       statusColor = statusColor ?? site!.statusColor;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +84,7 @@ class SiteDetailsScreen extends StatelessWidget {
                   ),
 
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
+                    color: statusColor.withAlpha((0.12 * 255).round()),
 
                     borderRadius: BorderRadius.circular(30),
                   ),
@@ -173,7 +188,7 @@ class SiteDetailsScreen extends StatelessWidget {
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),

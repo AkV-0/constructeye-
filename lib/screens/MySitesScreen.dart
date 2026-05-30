@@ -39,13 +39,12 @@ class _MySitesScreenState extends State<MySitesScreen> {
   Widget build(BuildContext context) {
     final siteProvider = Provider.of<SiteProvider>(context);
     final roleProvider = Provider.of<RoleProvider>(context);
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Sites'),
         actions: [
-          if (!roleProvider.isWorker)
+          if (roleProvider.isAdmin)
             IconButton(
               tooltip: 'Add Site',
               icon: const Icon(Icons.add),
@@ -83,9 +82,7 @@ class _MySitesScreenState extends State<MySitesScreen> {
                 itemCount: siteProvider.sites.length,
                 itemBuilder: (context, index) {
                   final site = siteProvider.sites[index];
-                  final canDelete =
-                      roleProvider.isAdmin ||
-                      (roleProvider.isUser && site.ownerId == currentUserId);
+                  final canDelete = roleProvider.isAdmin;
 
                   return Card(
                     elevation: 4,
@@ -117,9 +114,7 @@ class _MySitesScreenState extends State<MySitesScreen> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (roleProvider.isAdmin ||
-                              (roleProvider.isUser &&
-                                  site.ownerId == currentUserId))
+                          if (roleProvider.isAdmin)
                             IconButton(
                               icon: const Icon(
                                 Icons.edit,

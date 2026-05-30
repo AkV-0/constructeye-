@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SiteModel {
   final String id;
@@ -10,6 +11,7 @@ class SiteModel {
   final Color statusColor;
   final String ownerId;
   final String? assignedTo;
+  final DateTime? createdAt;
 
   SiteModel({
     required this.id,
@@ -21,6 +23,7 @@ class SiteModel {
     required this.statusColor,
     required this.ownerId,
     this.assignedTo,
+    this.createdAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -33,7 +36,7 @@ class SiteModel {
       'statusColor': statusColor.toARGB32(),
       'ownerId': ownerId,
       'assignedTo': assignedTo,
-      'createdAt': DateTime.now(),
+      'createdAt': createdAt ?? DateTime.now(),
     };
   }
 
@@ -46,6 +49,16 @@ class SiteModel {
   }
 
   factory SiteModel.fromMap(Map<String, dynamic> map, String docId) {
+    DateTime created;
+    final raw = map['createdAt'];
+    if (raw is Timestamp) {
+      created = raw.toDate();
+    } else if (raw is DateTime) {
+      created = raw;
+    } else {
+      created = DateTime.now();
+    }
+
     return SiteModel(
       id: docId,
       title: map['title'] ?? '',
@@ -56,6 +69,7 @@ class SiteModel {
       statusColor: Color(map['statusColor'] ?? 0xFF4CAF50),
       ownerId: map['ownerId'] ?? '',
       assignedTo: map['assignedTo'],
+      createdAt: created,
     );
   }
 }

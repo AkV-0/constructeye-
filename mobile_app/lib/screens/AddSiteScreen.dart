@@ -46,7 +46,7 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
 
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withAlpha((0.05 * 255).round()),
 
                   blurRadius: 16,
 

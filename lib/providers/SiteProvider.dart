@@ -23,7 +23,7 @@ class SiteProvider extends ChangeNotifier {
     try {
       if (role == 'admin') {
         _sites = await _siteService.fetchAllSites();
-      } else if (role == 'worker' || role == 'engineer') {
+      } else if (role == 'worker' || role == 'engineer' || role == 'executive') {
         _sites = await _siteService.fetchAssignedSites(_siteService.userId);
       } else {
         _sites = await _siteService.fetchUserSites();

@@ -1,8 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:io';
 import '../models/PhotoModel.dart';
 
 class PhotoProvider extends ChangeNotifier {
@@ -63,7 +63,7 @@ class PhotoProvider extends ChangeNotifier {
 
   Future<String> uploadPhoto(
     String siteId,
-    String filePath,
+    Uint8List fileBytes,
     String caption, {
     String? description,
   }) async {
@@ -75,14 +75,29 @@ class PhotoProvider extends ChangeNotifier {
       if (user == null) throw Exception('User not authenticated');
 
       final fileName = 'photos/$siteId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      debugPrint('Attempting to upload to: $fileName');
+      
       final storageRef = _storage.ref().child(fileName);
 
-      await storageRef.putFile(
-        File(filePath),
+      // Using putData instead of putFile for Web compatibility
+      final uploadTask = storageRef.putData(
+        fileBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
 
-      final downloadUrl = await storageRef.getDownloadURL();
+      // Listen to progress for debugging
+      uploadTask.snapshotEvents.listen(
+        (TaskSnapshot snapshot) {
+          debugPrint('Progress: ${(snapshot.bytesTransferred / snapshot.totalBytes) * 100} %');
+        },
+        onError: (e) {
+          debugPrint('Upload task error: $e');
+        },
+      );
+
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      debugPrint('Upload successful. URL: $downloadUrl');
 
       final photoDoc = PhotoModel(
         id: '',
@@ -109,7 +124,17 @@ class PhotoProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       debugPrint('Error uploading photo: $e');
-      throw Exception('Failed to upload photo: $e');
+      
+      String errorMsg = 'Failed to upload photo';
+      if (e.toString().contains('storage/unauthorized')) {
+        errorMsg = 'Firebase Storage Permission Denied. Please check your security rules.';
+      } else if (e.toString().contains('storage/canceled')) {
+        errorMsg = 'Upload was canceled.';
+      } else if (e.toString().contains('storage/retry-limit-exceeded')) {
+        errorMsg = 'Upload timed out. Please try a smaller image or better connection.';
+      }
+      
+      throw Exception('$errorMsg ($e)');
     }
   }
 

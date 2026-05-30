@@ -107,7 +107,7 @@ class MySitesScreen extends StatelessWidget {
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha((0.05 * 255).round()),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -159,7 +159,7 @@ class MySitesScreen extends StatelessWidget {
                         ),
 
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
+                          color: statusColor.withAlpha((0.12 * 255).round()),
 
                           borderRadius: BorderRadius.circular(30),
                         ),

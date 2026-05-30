@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
+import 'AdminDashboard.dart';
+import 'ClientDashboard.dart';
+import 'ExecutiveDashboard.dart';
 import 'AddSiteScreen.dart';
 import 'LoginScreen.dart';
 import 'SiteDetailsScreen.dart';
@@ -17,6 +20,8 @@ import 'ReportsScreen.dart';
 import 'SettingsScreen.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -107,9 +112,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         drawer: Drawer(backgroundColor: kDark, child: _sidebarContent()),
         body: getSelectedScreen(),
-        floatingActionButton: roleProvider.isWorker
-            ? null
-            : _buildAddSiteButton(),
+        floatingActionButton: roleProvider.isAdmin
+            ? _buildAddSiteButton()
+            : null,
       );
     }
 
@@ -121,9 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(child: getSelectedScreen()),
         ],
       ),
-      floatingActionButton: roleProvider.isWorker
-          ? null
-          : _buildAddSiteButton(),
+      floatingActionButton: roleProvider.isAdmin
+          ? _buildAddSiteButton()
+          : null,
     );
   }
 
@@ -219,39 +224,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ================= SCREEN SWITCHER =================
 
-  Widget getSelectedScreen() {
-    switch (selectedIndex) {
-      case 0:
-        return _overviewScreen();
-      case 1:
-        return MySitesScreen();
-      case 2:
-        return ReportsScreen();
-      case 3:
-        return PhotosScreen();
-      case 4:
-        return _simpleScreen("Notifications");
-      case 5:
-        return SettingsScreen();
-      default:
-        return _overviewScreen();
+Widget getSelectedScreen() {
+  final roleProvider = Provider.of<RoleProvider>(context);
+  
+  // Show role-specific dashboard when on Dashboard tab (index 0)
+  if (selectedIndex == 0) {
+    if (roleProvider.isAdmin) {
+      return const AdminDashboard();
+    } else if (roleProvider.isExecutive) {
+      return const ExecutiveDashboard();
+    } else {
+      return const ClientDashboard();
     }
   }
 
-  Widget _buildAddSiteButton() {
-    return FloatingActionButton(
-      tooltip: 'Add Site',
-      backgroundColor: kAccent,
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddSiteScreen()),
-        );
-      },
-      child: const Icon(Icons.add),
-    );
+  // Keep existing screens for other tabs
+  switch (selectedIndex) {
+    case 0:
+      return _overviewScreen();
+    case 1:
+      return MySitesScreen();
+    case 2:
+      return ReportsScreen();
+    case 3:
+      return PhotosScreen();
+    case 4:
+      return _simpleScreen("Notifications");
+    case 5:
+      return SettingsScreen();
+    default:
+      return _overviewScreen();
   }
-
+}
   // ================= OVERVIEW =================
 
   Widget _overviewScreen() {
@@ -383,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.08),
+                  color: Colors.red.withAlpha((0.08 * 255).round()),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.red.shade200),
                 ),
@@ -448,7 +452,10 @@ class _HomeScreenState extends State<HomeScreen> {
     child: Center(
       child: Text(
         "No sites yet. Add your first site!",
-        style: TextStyle(color: kSubText.withOpacity(0.6), fontSize: 15),
+        style: TextStyle(
+          color: kSubText.withAlpha((0.6 * 255).round()),
+          fontSize: 15,
+        ),
       ),
     ),
   );
@@ -499,10 +506,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
-              fontSize: isMobile ? 11 : 14,
-              color: kSubText,
-            ),
+            style: TextStyle(fontSize: isMobile ? 11 : 14, color: kSubText),
           ),
         ],
       ),
@@ -515,7 +519,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => SiteDetailsScreen(site: site)),
+        MaterialPageRoute(
+          builder: (_) => SiteDetailsScreen(
+            title: site.title,
+            location: site.location,
+            progress: site.progress,
+            status: site.status,
+            statusColor: site.statusColor,
+          ),
+        ),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -634,7 +646,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: LinearProgressIndicator(
                       value: _parseProgressValue(site.progress),
                       minHeight: isMobile ? 6 : 8,
-                      backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey.shade200,
+                      backgroundColor:
+                          Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey.shade200,
                       color: kAccent,
                     ),
                   ),
@@ -644,6 +659,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // ================= ADD SITE BUTTON =================
+
+  Widget _buildAddSiteButton() {
+    return FloatingActionButton(
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddSiteScreen()),
+      ),
+      backgroundColor: kAccent,
+      child: const Icon(Icons.add, color: Colors.white),
     );
   }
 }

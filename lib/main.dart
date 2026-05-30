@@ -26,8 +26,12 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Start the UI immediately.
-  runApp(const ConstructEyeApp());
+  // Load saved theme preference before building the UI so there's
+  // no flash of the wrong theme on startup.
+  final themeProvider = ThemeProvider();
+  await themeProvider.loadFromPrefs();
+
+  runApp(ConstructEyeApp(themeProvider: themeProvider));
 
   // Initialize Firebase Messaging asynchronously after app start so it
   // doesn't block the initial render (prevents white screen on web).
@@ -36,14 +40,10 @@ void main() async {
 
 Future<void> _initFirebaseMessaging() async {
   try {
-    // Register a background handler if supported.
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     final messaging = FirebaseMessaging.instance;
 
-    // Request permission on supported platforms; on web this will trigger
-    // the browser permission prompt but it's safe because it runs after
-    // the UI is shown.
     final settings = await messaging.requestPermission(
       alert: true,
       announcement: false,
@@ -73,7 +73,9 @@ Future<void> _initFirebaseMessaging() async {
 }
 
 class ConstructEyeApp extends StatelessWidget {
-  const ConstructEyeApp({super.key});
+  final ThemeProvider themeProvider;
+
+  const ConstructEyeApp({super.key, required this.themeProvider});
 
   @override
   Widget build(BuildContext context) {
@@ -83,14 +85,16 @@ class ConstructEyeApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RoleProvider()),
         ChangeNotifierProvider(create: (_) => PhotoProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        // Use the already-initialised ThemeProvider instance so the
+        // saved preference is available from the first frame.
+        ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
       ],
       child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+        builder: (context, tp, child) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'ConstructEye',
-            themeMode: themeProvider.themeMode,
+            themeMode: tp.themeMode,
             theme: ThemeData(
               scaffoldBackgroundColor: const Color(0xFFF4F5F5),
               cardColor: Colors.white,

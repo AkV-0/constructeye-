@@ -26,7 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final kCardBg = Theme.of(context).cardColor;
-    final kText = Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
+    final kText =
+        Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF37353E);
     const kDark = Color(0xFF37353E);
     const kAccent = Color(0xFF715A5A);
 
@@ -49,7 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+                          color: Colors.black.withAlpha(
+                            ((isDark ? 0.3 : 0.12) * 255).round(),
+                          ),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -172,7 +175,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Checkbox(
                                   value: rememberMe,
                                   activeColor: kAccent,
-                                  side: isDark ? const BorderSide(color: Colors.white54) : null,
+                                  side: isDark
+                                      ? const BorderSide(color: Colors.white54)
+                                      : null,
                                   onChanged: (v) =>
                                       setState(() => rememberMe = v ?? false),
                                 ),
@@ -235,7 +240,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             Text(
                               "Don't have an account? ",
-                              style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : Colors.black87),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
                             ),
                             TextButton(
                               onPressed: () => Navigator.push(
@@ -325,7 +333,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _inputDeco(String hint, IconData prefix, bool isDark, {Widget? suffix}) {
+  InputDecoration _inputDeco(
+    String hint,
+    IconData prefix,
+    bool isDark, {
+    Widget? suffix,
+  }) {
     return InputDecoration(
       filled: true,
       fillColor: isDark ? Colors.grey[900] : const Color(0xFFF4F5F5),
@@ -335,7 +348,10 @@ class _LoginScreenState extends State<LoginScreen> {
       suffixIcon: suffix,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: isDark ? Colors.grey[800]! : const Color(0xFFE0E0E0), width: 1.5),
+        borderSide: BorderSide(
+          color: isDark ? Colors.grey[800]! : const Color(0xFFE0E0E0),
+          width: 1.5,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

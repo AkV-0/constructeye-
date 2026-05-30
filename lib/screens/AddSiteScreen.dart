@@ -175,9 +175,7 @@ class _AddSiteScreenState extends State<AddSiteScreen> {
     final isEditing = widget.site != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Edit Site' : 'Add Site'),
-      ),
+      appBar: AppBar(title: Text(isEditing ? 'Edit Site' : 'Add Site')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
